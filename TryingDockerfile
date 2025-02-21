@@ -1,0 +1,35 @@
+# Stage 1: Build the application
+FROM node:18-slim AS builder
+
+# Set the working directory
+WORKDIR /online-app
+
+# Copy package.json and package-lock.json
+COPY package*.json ./
+
+# Install dependencies
+RUN npm install
+
+# Copy the rest of the application code
+COPY . .
+
+# Build the application (if needed, e.g., for TypeScript or bundling)
+RUN npm run build
+
+# Stage 2: Create the production image
+FROM gcr.io/distroless/nodejs18-debian12
+
+# Set the working directory
+WORKDIR /online-app
+
+# Copy only the necessary files from the builder stage
+COPY --from=builder /online-app/package*.json ./
+COPY --from=builder /online-app/node_modules ./node_modules
+COPY --from=builder /online-app/dist ./dist 
+
+
+# Expose the application port
+EXPOSE 3002
+
+# Set the command to run the application
+CMD ["src/index.js"] 
